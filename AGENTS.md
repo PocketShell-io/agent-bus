@@ -1,0 +1,9 @@
+# Agent Bus ownership and workflow
+
+Read docs/maintainer-intake-20261004.md and /home/alexey/git/cloudflare-agent-git/coordination/{OPERATING-MODEL,RESOURCE-POLICY,USER-STEERING}.md. Latest direct human request creates this separate sibling project under PocketShell-io. Message bus identity MUST be independent of aplexer UI sessions; do not enforce the older per-executor session requirement inside this product. Never forge or borrow native identities. Heads can retain normal interactive UIs, executors should ordinarily run headless.
+
+Existing agent-coordination-head81e801 is assigned integration head; explicit ACK and scoped file ownership required. Not alone in codebase: preserve peer changes and original agent-coordination work. Delegate independent core, transport and review tasks. Record native or standalone bus executor identity accurately, parent/team/task/owned paths, actual first tool and artifact, fresh quotas and continuation condition. Do not count processes or ACKs as outcomes.
+
+No Rust/build/install on dirty ~/git/aplexer, global install, purchase, secret publication, destructive cleanup or busy/draft injection. Fresh provider quotas; OpenAI Codex reserve15%; <=1500MiB new worker admission, >=10GiB MemAvailable, >=50GB target disk, <=512MiB scratch. Private logs under .local; credentials machine-local0600, never Git.
+
+Serialize entire add/explicit-path commit/push transaction with flock .local/git.lock. Ordinary Git/private remote recovery must remain independent of experimental bus or AgentBranches. Head arranges independently reviewed early dogfood on a real task; fallback to existing genuine messaging/Git. Every workaround or repeated manual operation becomes recorded maintainer intake with owner, acceptance and next task. No deployed/runtime guarantee from offline fixtures.
