@@ -1,0 +1,14 @@
+[project]
+name = "agent-bus"
+version = "0.1.0"
+description = "Aplexer-independent durable agent message bus"
+requires-python = ">=3.11"
+readme = "README.md"
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"
