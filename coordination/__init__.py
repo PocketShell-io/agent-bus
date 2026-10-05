@@ -1,2 +1,3 @@
-from .bus import BusIdentity, BusMessage, FileBus
-__all__ = ["BusIdentity", "BusMessage", "FileBus"]
+from .bus import BusError, BusIdentity, BusMessage, FileBus
+
+__all__ = ["BusError", "BusIdentity", "BusMessage", "FileBus"]
