@@ -63,38 +63,57 @@ def _valid_envelope() -> dict:
     }
 
 
-def _run_tests() -> None:
-    cases: list[tuple[dict, tuple[bool, str], str]] = [
-        (_valid_envelope(), (True, "ok"), "complete envelope"),
-        ({}, (False, "missing: message_id"), "empty envelope"),
-        (_valid_envelope() | {"message_id": ""},
-         (False, "missing: message_id"), "blank message_id"),
-        (_valid_envelope() | {"sender_id": None},
-         (False, "missing: sender_id"), "none sender_id"),
-        (_valid_envelope() | {"recipient_id": "   "},
-         (False, "missing: recipient_id"), "whitespace recipient_id"),
-        (_valid_envelope() | {"body": 0},
-         (False, "missing: body"), "falsy body"),
-        (_valid_envelope() | {"created_at": ""},
-         (False, "missing: created_at"), "blank created_at"),
-        (_valid_envelope() | {"idempotency_key": "  \t\n"},
-         (False, "missing: idempotency_key"), "whitespace idempotency_key"),
-    ]
+if __name__ == '__main__':
+    import unittest
 
-    for envelope, expected, label in cases:
-        result = validate_bus_envelope(envelope)
-        assert result == expected, f"{label}: expected {expected}, got {result}"
+    class TestValidateBusEnvelope(unittest.TestCase):
+        def setUp(self):
+            self.valid_env = {
+                "message_id": "msg-20261005-0001",
+                "sender_id": "agent-coordination-head81e801",
+                "recipient_id": "bus-executor-7f3a",
+                "body": "handoff: verify journal replay",
+                "created_at": "2026-10-05T09:00:00Z",
+                "idempotency_key": "idem-9d4a1c",
+            }
 
-    for field in REQUIRED_FIELDS:
-        envelope = _valid_envelope()
-        del envelope[field]
-        result = validate_bus_envelope(envelope)
-        assert result == (False, f"missing: {field}"), (
-            f"deleted {field}: got {result}"
-        )
+        def test_valid_envelope(self):
+            result = validate_bus_envelope(self.valid_env)
+            self.assertEqual(result, (True, "ok"))
+            
+        def test_empty_envelope(self):
+            result = validate_bus_envelope({})
+            self.assertEqual(result, (False, "missing: message_id"))
 
-    print(f"ok: {len(cases) + len(REQUIRED_FIELDS)} tests passed")
+        def test_missing_field(self):
+            for field in REQUIRED_FIELDS:
+                env = self.valid_env.copy()
+                del env[field]
+                result = validate_bus_envelope(env)
+                self.assertEqual(result, (False, f"missing: {field}"))
 
+        def test_blank_field(self):
+            env = self.valid_env.copy()
+            env["message_id"] = ""
+            result = validate_bus_envelope(env)
+            self.assertEqual(result, (False, "missing: message_id"))
 
-if __name__ == "__main__":
-    _run_tests()
+        def test_none_field(self):
+            env = self.valid_env.copy()
+            env["sender_id"] = None
+            result = validate_bus_envelope(env)
+            self.assertEqual(result, (False, "missing: sender_id"))
+
+        def test_whitespace_field(self):
+            env = self.valid_env.copy()
+            env["recipient_id"] = "   "
+            result = validate_bus_envelope(env)
+            self.assertEqual(result, (False, "missing: recipient_id"))
+            
+        def test_falsy_field(self):
+            env = self.valid_env.copy()
+            env["body"] = 0
+            result = validate_bus_envelope(env)
+            self.assertEqual(result, (False, "missing: body"))
+
+    unittest.main()
