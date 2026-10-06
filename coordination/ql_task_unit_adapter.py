@@ -201,7 +201,8 @@ def submit_task_unit(
     check_storage_floor()
     reject_head_cred_inheritance(payload)
 
-    cmd = [
+    # Submit first
+    cmd_submit = [
         sys.executable,
         "-m",
         "launcher",
@@ -218,15 +219,54 @@ def submit_task_unit(
         ",".join(paths),
     ]
 
-    proc = subprocess.run(
-        cmd,
+    proc_submit = subprocess.run(
+        cmd_submit,
         cwd=worktree,
         capture_output=True,
         text=True,
         timeout=30,
         check=True,
     )
-    return json.loads(proc.stdout)
+    
+    # Run synchronously
+    cmd_run = [
+        sys.executable,
+        "-m",
+        "launcher",
+        "--config-dir",
+        str(config_dir),
+        "run",
+        "--id",
+        task_id,
+        "--cwd",
+        payload.get("cwd", str(worktree)),
+        "--tmpdir",
+        payload.get("cwd", str(worktree)),
+        "--backend",
+        "task-units",
+        "--as-controller",
+    ]
+
+    proc_run = subprocess.run(
+        cmd_run,
+        cwd=worktree,
+        capture_output=True,
+        text=True,
+        timeout=600,
+        check=False,
+    )
+    
+    try:
+        # The output might have multiple lines, the JSON receipt is usually on a line by itself
+        for line in proc_run.stdout.splitlines():
+            if line.startswith("{"):
+                res = json.loads(line)
+                if "receipt" in res:
+                    return res["receipt"]
+                return res
+        return {"exit_code": proc_run.returncode, "state": "failed", "error": "No JSON receipt found", "stdout": proc_run.stdout, "stderr": proc_run.stderr}
+    except Exception as e:
+        return {"exit_code": 1, "state": "failed", "error": str(e), "stdout": proc_run.stdout, "stderr": proc_run.stderr}
 
 
 def map_terminal_receipt_to_bus_outcome(
@@ -345,7 +385,8 @@ class QLSessionlessConsumer:
                 data=current_msg.outcome,
                 idempotency_key=reply_key,
             )
-            self.bus.ack(self.identity_id, self.token, current_msg.message_id)
+            if type(current_msg.acked_at) is not str:
+                self.bus.ack(self.identity_id, self.token, current_msg.message_id)
             self.bus._cursors.advance(self.identity_id, current_msg.message_id)
             return {
                 "message_id": current_msg.message_id,

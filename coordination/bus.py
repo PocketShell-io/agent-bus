@@ -383,10 +383,13 @@ class FileBus:
             raise BusError("unknown_message", message_id)
         if raw["recipient_id"] != identity_id:
             raise BusError("not_recipient", message_id)
-        if not raw.get(field):
-            raw[field] = _utc()
-            messages[message_id] = raw
-            self._write(self._messages, messages)
+        
+        if type(raw.get(field)) is str:
+            return _msg(raw)
+            
+        raw[field] = _utc()
+        messages[message_id] = raw
+        self._write(self._messages, messages)
         return _msg(raw)
 
     def complete(

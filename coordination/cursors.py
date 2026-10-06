@@ -121,3 +121,20 @@ class CursorStore:
             table = self._load(self._cursors)
             table[mailbox] = message_id
             self._save(self._cursors, table)
+
+    def recover_corrupt_cursor(self, mailbox: str) -> bool:
+        with FileLock(self._lock):
+            try:
+                self._load(self._cursors)
+                return False
+            except ValueError:
+                import time
+                backup = self._cursors.with_name(f"{self._cursors.stem}.corrupt.{int(time.time() * 1000)}{self._cursors.suffix}")
+                try:
+                    import shutil
+                    shutil.copy2(self._cursors, backup)
+                except Exception:
+                    pass
+                self._save(self._cursors, {})
+                return True
+

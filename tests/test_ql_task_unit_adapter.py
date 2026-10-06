@@ -157,7 +157,7 @@ def test_submit_task_unit_dry_run(tmp_path: Path):
         assert res["id"] == "task-test"
         assert res["state"] == "queued"
         mock_floor.assert_called_once()
-        mock_run.assert_called_once()
+        assert mock_run.call_count == 2
 
 
 def test_consumer_processes_message_end_to_end(tmp_path: Path):
