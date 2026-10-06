@@ -211,8 +211,10 @@ def cmd_head_consume(bus_dir: Path, ws_dir: Path) -> dict[str, Any]:
 
     # Read pending dispatch mapping from bus messages
     all_msgs = bus.read_all() if hasattr(bus, "read_all") else []
-    # Process unread replies in head inbox
+    # Process unread replies in head inbox (fall back to all replies for idempotent replay/audit)
     inbox = bus.inbox(head_ident.identity_id, head_tok, unread_only=True)
+    if not inbox:
+        inbox = bus.inbox(head_ident.identity_id, head_tok, unread_only=False)
     consumed_count = 0
     validation_results = []
 
