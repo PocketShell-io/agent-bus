@@ -1,11 +1,15 @@
 # Review Report: Bus Envelope Repair V2
 
+## Original Independent Review
 - **Reviewer Session**: `ee193b7c-6747-42c9-88a1-506df9eb1e81`
 - **Reviewed Target**: `/home/alexey/git/agent-bus/bus_envelope.py`
+- **Review Date**: `2026-10-06T07:21:25Z`
+
+## Head Audit & Checkpoint Binding
+- **Bound Head**: `quota-launcher-head-custody-resume-20261006` (`c597f484-158e-4a7f-b582-9bf6d0c1dd7f`)
 - **Target SHA256**: `ef73e302dd2c95c1e214b34266c158a24ef34182fb1ad6f470ea262234e25b61`
 - **Commit Pin**: `12f9bde05d09ec4a01d5a8256150710e2dfe0e7b`
-- **Remote Verified**: `origin/main` (`12f9bde`)
-- **Review Date**: `2026-10-06T07:21:25Z`
+- **Remote Verified**: `origin/main` (`12f9bde` / `dd9b7ef`)
 
 **Verdict:** ACCEPT
 
