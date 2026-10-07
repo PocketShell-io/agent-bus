@@ -1,5 +1,11 @@
 # Agent Bus ownership and workflow
 
+## What this project works toward
+
+Make Agent Bus the message bus that agents use on one computer or across several, with claims and near-zero messaging cost, separate from aplexer.
+
+Heads read ~/git/cloudflare-agent-git/_docs/team/04-head.md for the role and ~/git/cloudflare-agent-git/_docs/04-communication.md for messaging.
+
 Read docs/maintainer-intake-20261004.md and /home/alexey/git/cloudflare-agent-git/coordination/{OPERATING-MODEL,RESOURCE-POLICY,USER-STEERING}.md. Latest direct human request creates this separate sibling project under PocketShell-io. Message bus identity MUST be independent of aplexer UI sessions; do not enforce the older per-executor session requirement inside this product. Never forge or borrow native identities. Heads can retain normal interactive UIs, executors should ordinarily run headless.
 
 Existing agent-coordination-head81e801 is assigned integration head; explicit ACK and scoped file ownership required. Not alone in codebase: preserve peer changes and original agent-coordination work. Delegate independent core, transport and review tasks. Record native or standalone bus executor identity accurately, parent/team/task/owned paths, actual first tool and artifact, fresh quotas and continuation condition. Do not count processes or ACKs as outcomes.
