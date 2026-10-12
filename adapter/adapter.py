@@ -30,9 +30,10 @@ class BusAdapterHandler(BaseHTTPRequestHandler):
                     urlparse(self.path).path, getattr(code, "value", code))
 
     def _bearer_token(self):
-        auth = self.headers.get("Authorization", "")
-        if auth.startswith("Bearer "):
-            return auth[len("Bearer "):].strip() or None
+        # Auth scheme names are case-insensitive (RFC 7235 2.1).
+        scheme, _, credentials = self.headers.get("Authorization", "").partition(" ")
+        if scheme.lower() == "bearer":
+            return credentials.strip() or None
         return None
 
     def _send_json(self, status: HTTPStatus, payload: dict) -> None:

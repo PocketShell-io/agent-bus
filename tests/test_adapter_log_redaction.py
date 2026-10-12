@@ -36,8 +36,9 @@ def adapter_server(tmp_path: Path):
         server.server_close()
 
 
-def _get(url, headers=None):
-    req = urllib.request.Request(url, headers=headers or {})
+def _get(url, headers=None, body=None):
+    data = json.dumps(body).encode() if body is not None else None
+    req = urllib.request.Request(url, data=data, headers=headers or {})
     try:
         with urllib.request.urlopen(req) as resp:
             return resp.status, json.loads(resp.read())
@@ -59,11 +60,20 @@ def test_tokens_never_logged(adapter_server):
             assert _get(f"{base}/v1/inbox?identity_id={ident.identity_id}&token={token}")[0] == 200
             assert _get(f"{base}/v1/inbox?identity_id={ident.identity_id}&token=wrong-secret")[0] == 400
             assert _get(f"{base}/v1/inbox?identity_id=nobody&token=unknown-secret")[0] == 400
+            inbox = f"{base}/v1/inbox?identity_id={ident.identity_id}"
+            assert _get(inbox, {"Authorization": f"Bearer {token}"})[0] == 200
+            assert _get(inbox, {"Authorization": "Bearer header-secret"})[0] == 400
+            send = {"sender_id": ident.identity_id, "recipient_id": ident.identity_id, "body": "x"}
+            assert _get(f"{base}/v1/send", body={**send, "token": token})[0] == 200
+            assert _get(f"{base}/v1/send", body={**send, "token": "post-secret"})[0] == 400
+            ack = {"identity_id": ident.identity_id, "message_id": "missing"}
+            assert _get(f"{base}/v1/ack", body={**ack, "token": "ack-secret"})[0] == 400
     finally:
         root.removeHandler(handler)
     output = records.getvalue() + stderr.getvalue()
     assert "/v1/inbox" in output
-    for secret in (token, "wrong-secret", "unknown-secret", "token="):
+    for secret in (token, "wrong-secret", "unknown-secret", "header-secret",
+                   "post-secret", "ack-secret", "token="):
         assert secret not in output
 
 
@@ -72,5 +82,7 @@ def test_bearer_header_auth(adapter_server):
     ident, token = bus.register(agent_name="a", device_id="d", project_id="p")
     url = f"{base}/v1/inbox?identity_id={ident.identity_id}"
     assert _get(url, {"Authorization": f"Bearer {token}"}) == (200, {"status": "ok", "messages": []})
+    assert _get(url, {"Authorization": f"bearer {token}"})[0] == 200
     assert _get(url, {"Authorization": "Bearer wrong"})[0] == 400
+    assert _get(url, {"Authorization": f"Basic {token}"})[0] == 400
     assert _get(url)[0] == 400
