@@ -12,17 +12,29 @@ from urllib.parse import parse_qs, urlparse
 
 # Add parent dir to path to find bus_core
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
-try:
-    from coordination.bus import FileBus
-    from coordination.errors import BusError, CoordinationError
-except ImportError:
-    # Fallback to standard generic classes if bus_core doesn't exist in the same way
-    class BusError(Exception): pass
-    class CoordinationError(Exception): pass
+# BusError lives in coordination.bus; the old coordination.errors import always
+# failed and fell back to a dummy class, turning every auth error into a 500.
+from coordination.bus import BusError, FileBus
 
 logger = logging.getLogger(__name__)
 
 class BusAdapterHandler(BaseHTTPRequestHandler):
+    def log_message(self, format, *args):
+        # The default handler logs the raw request line, query string included;
+        # identity tokens must never reach the journal, so log the path only.
+        logger.info("%s %s %s", self.client_address[0], self.command,
+                    urlparse(self.path).path)
+
+    def log_request(self, code="-", size="-"):
+        logger.info("%s %s %s %s", self.client_address[0], self.command,
+                    urlparse(self.path).path, getattr(code, "value", code))
+
+    def _bearer_token(self):
+        auth = self.headers.get("Authorization", "")
+        if auth.startswith("Bearer "):
+            return auth[len("Bearer "):].strip() or None
+        return None
+
     def _send_json(self, status: HTTPStatus, payload: dict) -> None:
         body = json.dumps(payload).encode("utf-8")
         self.send_response(status)
@@ -77,7 +89,8 @@ class BusAdapterHandler(BaseHTTPRequestHandler):
             if path == "/v1/inbox":
                 query = parse_qs(parsed.query)
                 identity_id = query.get("identity_id", [None])[0]
-                token = query.get("token", [None])[0]
+                # Query-string token is a deprecated fallback; prefer the header.
+                token = self._bearer_token() or query.get("token", [None])[0]
                 unread_only = query.get("unread_only", ["false"])[0].lower() == "true"
                 cursor = query.get("cursor", [None])[0]
                 

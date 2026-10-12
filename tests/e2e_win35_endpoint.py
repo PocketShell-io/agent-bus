@@ -68,8 +68,10 @@ def main():
     
     base_url = f"https://127.0.0.1:{port}/v1"
     
-    def do_req(url, method="GET", payload=None, ctx=ctx_good):
+    def do_req(url, method="GET", payload=None, ctx=ctx_good, token=None):
         req = urllib.request.Request(url, method=method)
+        if token:
+            req.add_header("Authorization", f"Bearer {token}")
         if payload:
             data = json.dumps(payload).encode("utf-8")
             req.add_header("Content-Type", "application/json")
@@ -91,7 +93,7 @@ def main():
     assert status in [0, 403], f"Expected fail no-cert, got {status}"
     
     print("Testing negative: unauthorized cert")
-    status, res = do_req(f"{base_url}/inbox?identity_id=foo&token=bar", ctx=ctx_bad)
+    status, res = do_req(f"{base_url}/inbox?identity_id=foo", ctx=ctx_bad, token="bar")
     print(f"unauthorized cert result: {status} {res}")
     assert status == 403, f"Expected 403 bad cert, got {status}"
     
@@ -135,7 +137,7 @@ def main():
     assert status == 409, f"Expected 409 replay, got {status} {res}"
     
     print("Testing positive: poll inbox")
-    status, res = do_req(f"{base_url}/inbox?identity_id={identity_id}&token={token}", ctx=ctx_good)
+    status, res = do_req(f"{base_url}/inbox?identity_id={identity_id}", ctx=ctx_good, token=token)
     assert status == 200, f"Expected 200 inbox, got {status} {res}"
 
     messages = res["messages"]

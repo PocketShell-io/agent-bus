@@ -265,3 +265,18 @@ def test_parent_child_independent_credentials(tmp_path: Path):
     msg = bus.send(sender_id=parent.identity_id, token=pt, recipient_id=child.identity_id, body="work")
     assert bus.inbox(child.identity_id, ct)[0].message_id == msg.message_id
     assert bus.inbox(parent.identity_id, pt) == []
+
+
+def test_rotate_token_invalidates_old_and_keeps_inbox(tmp_path: Path):
+    bus = FileBus(tmp_path)
+    a, ta = bus.register(agent_name="a", device_id="d", project_id="p")
+    b, tb = bus.register(agent_name="b", device_id="d", project_id="p")
+    bus.send(sender_id=a.identity_id, token=ta, recipient_id=b.identity_id, body="hi")
+    new = bus.rotate_token(b.identity_id)
+    assert new != tb
+    with pytest.raises(BusError):
+        bus.inbox(b.identity_id, tb)
+    assert [m.body for m in bus.inbox(b.identity_id, new)] == ["hi"]
+    assert bus.inbox(a.identity_id, ta) == []
+    with pytest.raises(BusError):
+        bus.rotate_token("missing")

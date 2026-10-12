@@ -239,6 +239,24 @@ class FileBus:
             self._commit({self._identities: identities, self._tokens: tokens})
             return ident, token
 
+    def rotate_token(self, identity_id: str) -> str:
+        """Operator-only: replace an identity's token, invalidating the old one.
+
+        Needs local store access; not exposed over the HTTP adapter. The
+        identity, its messages and cursors are kept, so the device resumes
+        with the new token without re-registering.
+        """
+        with FileLock(self._lock):
+            self._recover_locked()
+            identities = self._read(self._identities, {})
+            tokens = self._read(self._tokens, {})
+            if identity_id not in identities:
+                raise BusError("unknown_identity", identity_id)
+            token = _new_id()
+            tokens[identity_id] = token
+            self._commit({self._tokens: tokens})
+            return token
+
     def send(
         self,
         *,
