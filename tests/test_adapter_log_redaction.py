@@ -2,6 +2,8 @@ import contextlib
 import importlib.util
 import io
 import json
+import socket
+import time
 import logging
 import threading
 import urllib.error
@@ -83,6 +85,39 @@ def test_bearer_header_auth(adapter_server):
     url = f"{base}/v1/inbox?identity_id={ident.identity_id}"
     assert _get(url, {"Authorization": f"Bearer {token}"}) == (200, {"status": "ok", "messages": []})
     assert _get(url, {"Authorization": f"bearer {token}"})[0] == 200
+    assert _get(url, {"Authorization": f"Bearer\t {token}"})[0] == 200
+    assert _get(url, {"Authorization": "Bearer"})[0] == 400
     assert _get(url, {"Authorization": "Bearer wrong"})[0] == 400
     assert _get(url, {"Authorization": f"Basic {token}"})[0] == 400
     assert _get(url)[0] == 400
+
+
+def test_malformed_request_line_does_not_reflect_or_log_token(adapter_server):
+    _, base = adapter_server
+    host, port = base.rsplit("/", 1)[-1].split(":")
+    records = io.StringIO()
+    handler = logging.StreamHandler(records)
+    root = logging.getLogger()
+    root.addHandler(handler)
+    root.setLevel(logging.DEBUG)
+    stderr = io.StringIO()
+    responses = []
+    try:
+        with contextlib.redirect_stderr(stderr):
+            for raw in (b"GET /v1/inbox?token=line-secret extra junk HTTP/1.1\r\n\r\n",
+                        b"GET /v1/inbox?token=version-secret HTTP/9.9\r\n\r\n"):
+                with socket.create_connection((host, int(port))) as s:
+                    s.sendall(raw)
+                    chunks = []
+                    while chunk := s.recv(65536):
+                        chunks.append(chunk)
+                    responses.append(b"".join(chunks))
+            time.sleep(0.1)
+    finally:
+        root.removeHandler(handler)
+    assert responses[0].startswith(b"HTTP/1.0 400 Bad Request")
+    output = records.getvalue() + stderr.getvalue()
+    assert "Traceback" not in output
+    for secret in ("line-secret", "version-secret"):
+        assert secret not in output
+        assert all(secret.encode() not in r for r in responses)
