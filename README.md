@@ -1,3 +1,6 @@
+> **Deprecated: superseded by [Agent Hub](https://github.com/alexeygrigorev/agent-hub).**
+> Use Agent Hub for the authenticated cross-host message API and host bridges. Preserve durable message IDs and the separate receipt, ACK, acceptance and completion stages. Retire an existing adapter only after replacement traffic is verified. See the [migration guide](https://github.com/alexeygrigorev/agent-hub/blob/main/docs/GENERIC-HUB.md).
+
 # Agent Bus
 
 Standalone durable messaging for interactive and headless agents, independent of aplexer terminal sessions. Foundation for cross-machine coordination. Implementation is starting; no working product or cross-host acceptance is claimed yet.
